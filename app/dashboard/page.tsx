@@ -2,14 +2,33 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createAdminClient } from '@/app/lib/supabase'
 import { cookies } from 'next/headers'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/supabase-js'
 import Navbar from '@/app/components/layout/Navbar'
-import { Plus, Eye, Edit2, Ticket, TrendingUp, Users, Calendar, MoreVertical } from 'lucide-react'
+import { Plus, Eye, Edit2, Ticket, TrendingUp, Users, Calendar } from 'lucide-react'
 import { formatDate, formatCurrency, STATUS_COLORS } from '@/app/lib/utils'
+
+// Build a server-side Supabase client that forwards the browser auth cookie
+function createServerClient() {
+  const cookieStore = cookies()
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+  const cookieHeader = cookieStore.getAll()
+    .map(c => `${c.name}=${c.value}`)
+    .join('; ')
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { cookie: cookieHeader } },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  })
+}
 
 async function getDashboardData(userId: string) {
   const supabase = createAdminClient()
-
   const [eventsRes, ordersRes] = await Promise.all([
     supabase
       .from('events')
@@ -24,7 +43,6 @@ async function getDashboardData(userId: string) {
       .order('created_at', { ascending: false })
       .limit(10),
   ])
-
   return {
     events: eventsRes.data ?? [],
     recentOrders: ordersRes.data ?? [],
@@ -32,9 +50,8 @@ async function getDashboardData(userId: string) {
 }
 
 export default async function DashboardPage() {
-  const cookieStore = cookies()
-  const supabase = createServerComponentClient({ cookies: () => cookieStore })
-  const { data: { session } } = await supabase.auth.getSession()
+  const serverClient = createServerClient()
+  const { data: { session } } = await serverClient.auth.getSession()
 
   if (!session) redirect('/auth/login')
 
@@ -103,9 +120,7 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Events list */}
           <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display font-bold text-xl text-white">Your Events</h2>
-            </div>
+            <h2 className="font-display font-bold text-xl text-white mb-4">Your Events</h2>
 
             {events.length === 0 ? (
               <div className="glass rounded-2xl p-12 text-center">
@@ -136,8 +151,6 @@ export default async function DashboardPage() {
                             </span>
                           </div>
                           <p className="text-white/40 text-sm">{formatDate(event.start_date)} · {event.city}</p>
-
-                          {/* Progress bar */}
                           {total > 0 && (
                             <div className="mt-3">
                               <div className="flex justify-between text-xs text-white/40 mb-1">
@@ -153,7 +166,6 @@ export default async function DashboardPage() {
                             </div>
                           )}
                         </div>
-
                         <div className="flex items-center gap-1 shrink-0">
                           <Link
                             href={`/events/${event.slug}`}
