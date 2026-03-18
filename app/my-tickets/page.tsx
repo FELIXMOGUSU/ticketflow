@@ -1,12 +1,28 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/app/lib/supabase'
 import Navbar from '@/app/components/layout/Navbar'
 import Footer from '@/app/components/layout/Footer'
 import { Ticket, Calendar, MapPin, QrCode, Download } from 'lucide-react'
 import { formatDateTime, formatCurrency, STATUS_COLORS } from '@/app/lib/utils'
+
+function createServerClient() {
+  const cookieStore = cookies()
+  const cookieHeader = cookieStore.getAll()
+    .map(c => `${c.name}=${c.value}`)
+    .join('; ')
+
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: { headers: { cookie: cookieHeader } },
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    }
+  )
+}
 
 async function getMyTickets(userId: string) {
   const supabase = createAdminClient()
@@ -24,9 +40,8 @@ async function getMyTickets(userId: string) {
 }
 
 export default async function MyTicketsPage() {
-  const cookieStore = cookies()
-  const supabase = createServerComponentClient({ cookies: () => cookieStore })
-  const { data: { session } } = await supabase.auth.getSession()
+  const serverClient = createServerClient()
+  const { data: { session } } = await serverClient.auth.getSession()
 
   if (!session) redirect('/auth/login')
 
@@ -78,7 +93,6 @@ export default async function MyTicketsPage() {
                     </div>
                   </div>
 
-                  {/* Event info */}
                   {event && (
                     <div className="px-6 py-3 flex flex-wrap gap-4 text-sm text-white/50 border-b border-white/10">
                       <span className="flex items-center gap-1.5">
@@ -92,7 +106,6 @@ export default async function MyTicketsPage() {
                     </div>
                   )}
 
-                  {/* Tickets */}
                   <div className="divide-y divide-white/10">
                     {tickets.map((ticket: any) => (
                       <div key={ticket.id} className="px-6 py-4 flex items-center justify-between gap-4">
@@ -117,7 +130,6 @@ export default async function MyTicketsPage() {
                     ))}
                   </div>
 
-                  {/* Total */}
                   <div className="px-6 py-3 bg-white/5 flex justify-end">
                     <span className="text-white/50 text-sm">
                       Total: <span className="font-display font-bold text-white ml-1">{formatCurrency(order.total_amount, order.currency)}</span>
