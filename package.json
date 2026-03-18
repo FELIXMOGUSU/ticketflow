@@ -1,0 +1,37 @@
+{
+  "name": "ticketflow",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.3",
+    "react": "^18",
+    "react-dom": "^18",
+    "@supabase/supabase-js": "^2.43.1",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "qrcode": "^1.5.3",
+    "uuid": "^9.0.1",
+    "date-fns": "^3.6.0",
+    "react-hook-form": "^7.51.5",
+    "zod": "^3.23.8",
+    "@hookform/resolvers": "^3.4.2",
+    "lucide-react": "^0.378.0",
+    "clsx": "^2.1.1"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/qrcode": "^1.5.5",
+    "@types/uuid": "^9.0.8",
+    "tailwindcss": "^3.4.3",
+    "autoprefixer": "^10.0.1",
+    "postcss": "^8"
+  }
+}
