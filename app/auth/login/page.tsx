@@ -2,12 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Ticket, Mail, Lock, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '@/app/lib/supabase'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [form, setForm] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -18,7 +16,7 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: form.email,
       password: form.password,
     })
@@ -26,9 +24,21 @@ export default function LoginPage() {
     if (error) {
       setError(error.message)
       setLoading(false)
-    } else {
-      router.push('/dashboard')
-      router.refresh()
+      return
+    }
+
+    if (data.session) {
+      // Check the user's role to redirect correctly
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.session.user.id)
+        .single()
+
+      // Hard navigation ensures the session cookie is fully set
+      // before the server-side dashboard reads it
+      const destination = profile?.role === 'attendee' ? '/my-tickets' : '/dashboard'
+      window.location.href = destination
     }
   }
 
